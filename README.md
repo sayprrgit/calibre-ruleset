@@ -3,7 +3,7 @@
 Ruleset d'entraînement et d'analyse pour **osu!lazer**, orienté aim et tap. Calibre joue les beatmaps osu!standard
 existantes, mesure finement les erreurs du joueur et, à terme, génère des exercices ciblés sur ses points faibles.
 
-> Projet en cours. Ce README décrit l'état au **jalon 2** et sera réécrit au jalon 6.
+> Projet en cours. Ce README décrit l'état au **jalon 3** et sera réécrit au jalon 6.
 
 ## Feuille de route
 
@@ -11,7 +11,7 @@ existantes, mesure finement les erreurs du joueur et, à terme, génère des exe
 |---|---|---|
 | J1 | Ruleset minimal jouable : conversion, cercles, jugement, autoplay | ✅ |
 | J2 | Sliders, spinners, score, HP, HUD | ✅ |
-| J3 | Module Diagnostic : latence, stabilité par touche, précision d'aim par zone | ⏳ |
+| J3 | Module Diagnostic : latence, stabilité par touche, précision d'aim par zone | ✅ |
 | J4 | Module Analyse : heatmap, timeline d'erreur, classement par pattern | ⏳ |
 | J5 | Module Entraînement adaptatif : profil local et générateur déterministe | ⏳ |
 | J6 | Finitions, captures, README final | ⏳ |
@@ -75,12 +75,55 @@ Redémarrer ensuite lazer : Calibre apparaît dans la liste des modes de jeu.
 - Calibre ajoute sous l'aire de jeu un panneau par touche : nombre de frappes réussies et écart moyen à l'instant
   parfait, mis à jour à chaque jugement.
 
+## Module Diagnostic (J3)
+
+Dans lazer : **Réglages > Calibre > Diagnostic des périphériques**. L'écran propose trois tests, joués avec les
+touches de jeu de Calibre. Chaque résultat s'affiche sous forme de graphiques.
+
+| Test | Déroulé | Mesures |
+|---|---|---|
+| Latence perçue | Frappe sur un métronome audio (100 BPM), puis sur un métronome visuel seul, son coupé | Écart moyen et écart-type pour chaque phase, offset audio et visuel recommandés, écart entre les deux |
+| Stabilité par touche | Frappe en alternance K1/K2 (ou M1/M2) sur un métronome rapide, comme dans un stream | UR, biais (avance ou retard) et dérive au fil du test pour chaque touche, touche « traînante » ou moins régulière |
+| Précision d'aim | 45 cibles sur une grille 3x3 de l'aire de jeu, au même cadrage qu'en partie | Distance au centre, temps de réaction et taux de miss par zone, zone faible |
+
+**Méthode.**
+
+- **Horloge de référence.** Le métronome est une piste WAV générée en mémoire. Chaque clic est écrit à
+  l'échantillon exact de son temps, et la position de lecture de la piste sert d'horloge : c'est le même principe que
+  l'horloge de jeu de lazer, calée sur la musique.
+- **Datation des frappes.** Une frappe est datée à sa réception, et non à l'image suivante.
+- **Statistiques.**
+  - L'UR suit la définition de lazer : 10 × l'écart-type des écarts.
+  - La dérive est la pente de la régression linéaire de l'écart en fonction du temps, en ms par minute.
+- **Touche traînante.** Elle est détectée par un test t de Welch sur les moyennes de deux touches jumelles (p < 0,05).
+  Il faut aussi un décalage d'au moins 3 ms, pour qu'une différence infime ne soit pas signalée à cause du grand
+  nombre de frappes.
+- **Touche moins régulière.** Le test est le même avec un test F sur les variances, et un UR au moins 1,2 fois plus
+  élevé. Les lois de Student et de Fisher sont calculées sans dépendance externe, puis vérifiées contre leurs tables.
+- **Cibles d'aim.** Elles sont générées à graine fixe : deux périphériques testés voient exactement la même séquence.
+
+**Export.** Le bouton « Exporter en JSON » écrit dans `calibre/diagnostics/` du dossier de données de lazer un
+fichier horodaté, par exemple `calibre-diagnostic-20261027-163012.json`. Il contient :
+
+- un libellé libre, pour nommer le périphérique ou le réglage testé ;
+- le résultat de chaque test effectué ;
+- les données brutes : écarts de chaque frappe et tentatives sur chaque cible.
+
+Deux exports se comparent ainsi d'un réglage à l'autre.
+
 ## Limites connues
 
 - Pas encore de *stacking* des objets superposés, ni de corps de slider qui se dessine progressivement.
 - Le suivi d'un slider accepte toute touche maintenue, même enfoncée avant le slider.
 - En replay, revenir en arrière pendant un spinner ne recalcule pas sa rotation.
 - Ni bonus de spinner ni son de glissement sur les sliders.
+- osu-framework ne date pas les entrées au niveau matériel. Elles sont relevées à 1000 Hz puis traitées sur le thread
+  de mise à jour, où Calibre les date : la précision est de l'ordre de la milliseconde, comme dans lazer.
+- L'éclair du métronome visuel apparaît à l'image qui suit le temps : la fréquence de l'écran fait partie de la latence
+  visuelle mesurée.
+- Un test de stabilité mesure les touches utilisées pendant ce test. Tester la souris après le clavier remplace le
+  résultat précédent : il faut exporter entre les deux.
+- La comparaison de deux exports se fait hors du jeu, sur les fichiers JSON.
 
 ## Contraintes découvertes
 
