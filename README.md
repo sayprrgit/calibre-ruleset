@@ -3,7 +3,7 @@
 Ruleset d'entraînement et d'analyse pour **osu!lazer**, orienté aim et tap. Calibre joue les beatmaps osu!standard
 existantes, mesure finement les erreurs du joueur et, à terme, génère des exercices ciblés sur ses points faibles.
 
-> Projet en cours. Ce README décrit l'état au **jalon 4** et sera réécrit au jalon 6.
+> Projet en cours. Ce README décrit l'état au **jalon 5** et sera réécrit au jalon 6.
 
 ## Feuille de route
 
@@ -13,7 +13,7 @@ existantes, mesure finement les erreurs du joueur et, à terme, génère des exe
 | J2 | Sliders, spinners, score, HP, HUD | ✅ |
 | J3 | Module Diagnostic : latence, stabilité par touche, précision d'aim par zone | ✅ |
 | J4 | Module Analyse : heatmap, timeline d'erreur, classement par pattern | ✅ |
-| J5 | Module Entraînement adaptatif : profil local et générateur déterministe | ⏳ |
+| J5 | Module Entraînement adaptatif : profil local et générateur déterministe | ✅ |
 | J6 | Finitions, captures, README final | ⏳ |
 
 ## Prérequis
@@ -138,6 +138,34 @@ Après chaque partie, l'écran de résultats de lazer affiche les panneaux de Ca
   avec au moins 10 points de plus. Les fenêtres qui se chevauchent sont fusionnées.
 - **Temps réels.** Temps et écarts sont divisés par la vitesse de jeu, comme l'UR de lazer.
 
+## Module Entraînement adaptatif (J5)
+
+**Profil.** Après chaque partie de Calibre terminée, le bilan par pattern du module Analyse est ajouté à un profil
+local, `calibre/profile.json` dans le dossier de données de lazer. Les replays, l'autoplay et les parties ratées ne
+sont pas pris en compte : après un échec, lazer n'enregistre plus de `HitEvents`, le bilan serait tronqué.
+
+**Exercice.** Dans lazer : **Réglages > Calibre > Entraînement adaptatif**. L'écran montre le profil et cible les trois
+patterns les plus faibles. Ce sont ceux de plus basse précision, à condition qu'ils aient été joués au moins 20 fois.
+On règle le BPM (120 à 240), la durée (30 à 180 s) et l'intensité, qui allonge les sauts et les streams. L'exercice
+généré se joue comme une partie normale, avec un métronome généré en code et l'écran de résultats du J4.
+
+**Difficulté progressive.** Chaque pattern a un niveau, de ×0,5 à ×2, qui multiplie la longueur de ses exercices.
+Après une partie, il gagne 0,1 si la précision sur ce pattern atteint 95 %, et perd 0,1 sous 80 %.
+
+**Méthode.**
+
+- **Déterminisme.** Le générateur part d'un seul `Random` initialisé par la graine : à graine égale, le même exercice.
+  La graine est affichée pour pouvoir rejouer un exercice.
+- **Cohérence avec l'analyse.** Les patterns générés suivent les seuils du classement du J4 (subdivisions,
+  espacements, angles). Les tests vérifient que l'analyse d'un exercice parfait retrouve le pattern entraîné dans au
+  moins 90 % des enchaînements, pour chaque type et aux deux BPM extrêmes.
+- **Sauts dans l'aire de jeu.** Un saut ouvert arrivé de face contre un bord ne peut repartir qu'en faisant demi-tour,
+  ce qui en ferait un saut aigu. Le générateur choisit donc chaque rotation en anticipant jusqu'à trois sauts.
+- **Profil exact.** Il garde des sommes plutôt que des moyennes, pour que l'UR de toutes les parties réunies se
+  recalcule exactement.
+- **Écriture sûre.** L'écriture est atomique. Un profil illisible est mis de côté dans `profile.corrupt.json` plutôt
+  qu'écrasé.
+
 ## Limites connues
 
 - Pas encore de *stacking* des objets superposés, ni de corps de slider qui se dessine progressivement.
@@ -155,6 +183,10 @@ Après chaque partie, l'écran de résultats de lazer affiche les panneaux de Ca
   de moins d'un diamètre compte comme un saut court.
 - Sans fichier `.osr` pour un ruleset custom, l'analyse n'est disponible que juste après la partie, ou pour un replay
   encore en mémoire.
+- Les scores des exercices ne sont pas enregistrés dans lazer : leur beatmap, générée à la volée, n'existe pas dans sa
+  base. Ils comptent seulement pour le profil.
+- Les sauts longs ouverts tiennent difficilement dans l'aire de jeu : leurs blocs ne comptent que trois sauts, à
+  3,8 diamètres au plus.
 
 ## Contraintes découvertes
 
