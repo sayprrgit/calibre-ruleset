@@ -12,6 +12,7 @@ using osu.Game.Rulesets.Calibre.Replays;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.UI;
+using osu.Game.Scoring;
 
 namespace osu.Game.Rulesets.Calibre.UI
 {
@@ -28,6 +29,8 @@ namespace osu.Game.Rulesets.Calibre.UI
         public override PlayfieldAdjustmentContainer CreatePlayfieldAdjustmentContainer() => new CalibrePlayfieldAdjustmentContainer();
 
         protected override ReplayInputHandler CreateReplayInputHandler(Replay replay) => new CalibreFramedReplayInputHandler(replay);
+
+        protected override ReplayRecorder CreateReplayRecorder(Score score) => new CalibreReplayRecorder(score);
 
         // Les drawables sont fournis par les pools enregistrés dans CalibrePlayfield.
         public override DrawableHitObject<CalibreHitObject>? CreateDrawableRepresentation(CalibreHitObject h) => null;
