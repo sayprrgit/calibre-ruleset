@@ -3,19 +3,24 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using osu.Framework.Graphics;
 using osu.Framework.Input.Bindings;
 using osu.Framework.Localisation;
 using osu.Game.Beatmaps;
 using osu.Game.Overlays.Settings;
+using osu.Game.Rulesets.Calibre.Analysis;
 using osu.Game.Rulesets.Calibre.Beatmaps;
 using osu.Game.Rulesets.Calibre.Mods;
 using osu.Game.Rulesets.Calibre.Scoring;
+using osu.Game.Rulesets.Calibre.Statistics;
 using osu.Game.Rulesets.Calibre.UI;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.UI;
+using osu.Game.Scoring;
+using osu.Game.Screens.Ranking.Statistics;
 
 namespace osu.Game.Rulesets.Calibre
 {
@@ -55,6 +60,38 @@ namespace osu.Game.Rulesets.Calibre
             HitResult.LargeTickHit,
             HitResult.SliderTailHit,
         };
+
+        /// <summary>
+        /// Panneaux d'analyse de l'écran de résultats. lazer appelle cette méthode hors du thread de jeu
+        /// (dans une tâche de fond) : toute l'analyse est faite ici, les drawables ne font qu'afficher.
+        /// </summary>
+        public override StatisticItem[] CreateStatisticsForScore(ScoreInfo score, IBeatmap playableBeatmap)
+        {
+            var hitEvents = score.HitEvents ?? new List<HitEvent>();
+            var timingEvents = hitEvents.Where(HitEventExtensions.AffectsUnstableRate).ToList();
+
+            var hits = TimedHits.From(playableBeatmap, hitEvents);
+            var sections = UnstableSectionDetector.Detect(hits);
+            var heatmap = PositionHeatmap.From(hits);
+            var patterns = PatternClassifier.Summarise(hits);
+
+            return new[]
+            {
+                new StatisticItem("Distribution des erreurs de timing", () => new HitEventTimingDistributionGraph(timingEvents)
+                {
+                    RelativeSizeAxes = Axes.X,
+                    Height = 250,
+                }, true, true),
+                new StatisticItem(string.Empty, () => new SimpleStatisticTable(2, new SimpleStatisticItem[]
+                {
+                    new AverageHitError(timingEvents),
+                    new UnstableRate(timingEvents),
+                }), true, true),
+                new StatisticItem("Erreur de timing au fil de la map (sections instables en rouge)", () => new HitErrorTimeline(hits, sections), true, true),
+                new StatisticItem("Erreurs de position sur l'aire de jeu", () => new PositionHeatmapGraph(heatmap), true, false),
+                new StatisticItem("Par type de pattern", () => new PatternTable(patterns), true, false),
+            };
+        }
 
         public override LocalisableString GetDisplayNameForHitResult(HitResult result)
         {
