@@ -8,9 +8,11 @@ using osu.Framework.Input.Bindings;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Calibre.Beatmaps;
 using osu.Game.Rulesets.Calibre.Mods;
+using osu.Game.Rulesets.Calibre.Scoring;
 using osu.Game.Rulesets.Calibre.UI;
 using osu.Game.Rulesets.Difficulty;
 using osu.Game.Rulesets.Mods;
+using osu.Game.Rulesets.Scoring;
 using osu.Game.Rulesets.UI;
 
 namespace osu.Game.Rulesets.Calibre
@@ -33,6 +35,8 @@ namespace osu.Game.Rulesets.Calibre
 
         public override IBeatmapConverter CreateBeatmapConverter(IBeatmap beatmap) =>
             new CalibreBeatmapConverter(beatmap, this);
+
+        public override ScoreProcessor CreateScoreProcessor() => new CalibreScoreProcessor(this);
 
         public override DifficultyCalculator CreateDifficultyCalculator(IWorkingBeatmap beatmap) =>
             new CalibreDifficultyCalculator(RulesetInfo, beatmap);
