@@ -6,6 +6,7 @@ using osu.Framework.Graphics;
 using osu.Framework.Screens;
 using osu.Game.Overlays.Settings;
 using osu.Game.Rulesets.Calibre.Diagnostics.Screens;
+using osu.Game.Rulesets.Calibre.Training;
 using osu.Game.Screens;
 
 namespace osu.Game.Rulesets.Calibre.UI
@@ -37,6 +38,12 @@ namespace osu.Game.Rulesets.Calibre.UI
                     TooltipText = "Latence perçue, stabilité par touche et précision d'aim par zone",
                     // Comme les réglages du jeu, on revient au menu principal avant d'ouvrir l'écran.
                     Action = () => performer?.PerformFromScreen(screen => screen.Push(new DiagnosticScreen(ruleset))),
+                },
+                new SettingsButton
+                {
+                    Text = "Entraînement adaptatif",
+                    TooltipText = "Exercices générés sur les patterns les plus faibles de ton profil",
+                    Action = () => performer?.PerformFromScreen(screen => screen.Push(new TrainingScreen(ruleset))),
                 },
             };
         }
