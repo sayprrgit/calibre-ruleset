@@ -9,6 +9,7 @@ using osu.Game.Input.Handlers;
 using osu.Game.Replays;
 using osu.Game.Rulesets.Calibre.Objects;
 using osu.Game.Rulesets.Calibre.Replays;
+using osu.Game.Rulesets.Calibre.Training;
 using osu.Game.Rulesets.Mods;
 using osu.Game.Rulesets.Objects.Drawables;
 using osu.Game.Rulesets.UI;
@@ -22,6 +23,12 @@ namespace osu.Game.Rulesets.Calibre.UI
         public DrawableCalibreRuleset(CalibreRuleset ruleset, IBeatmap beatmap, IReadOnlyList<Mod>? mods = null)
             : base(ruleset, beatmap, mods)
         {
+        }
+
+        [BackgroundDependencyLoader]
+        private void load()
+        {
+            Overlays.Add(new ProfileRecorder());
         }
 
         protected override Playfield CreatePlayfield() => new CalibrePlayfield();
