@@ -13,7 +13,10 @@ namespace osu.Game.Rulesets.Calibre.Tests
         [STAThread]
         public static int Main(string[] args)
         {
-            using (DesktopGameHost host = Host.GetSuitableDesktopHost(@"osu"))
+            // Stockage dédié (%APPDATA%\calibre-visual-tests) au lieu de « osu », qui est celui de lazer :
+            // le navigateur de tests embarque le osu.Game du NuGet, potentiellement plus récent que le lazer installé,
+            // et ouvrirait (voire migrerait) la vraie base Realm du joueur.
+            using (DesktopGameHost host = Host.GetSuitableDesktopHost(@"calibre-visual-tests"))
             {
                 host.Run(new OsuTestBrowser());
                 return 0;
