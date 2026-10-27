@@ -115,6 +115,9 @@ namespace osu.Game.Rulesets.Calibre
         {
             switch (type)
             {
+                case ModType.DifficultyReduction:
+                    return new[] { new CalibreModNoFail() };
+
                 case ModType.Automation:
                     return new[] { new CalibreModAutoplay() };
 

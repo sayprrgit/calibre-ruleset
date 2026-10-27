@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
+using System.Linq;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Game.Graphics;
@@ -14,30 +15,35 @@ using osuTK;
 namespace osu.Game.Rulesets.Calibre.Statistics
 {
     /// <summary>
-    /// Tableau par type de pattern : nombre d'objets, précision, UR et écart moyen.
+    /// Tableau à cinq colonnes, une ligne par type de pattern : bilan d'une partie (écran de résultats) ou du profil (entraînement).
     /// </summary>
     public partial class PatternTable : FillFlowContainer
     {
         private static readonly float[] column_widths = { 0.4f, 0.12f, 0.16f, 0.14f, 0.18f };
 
         public PatternTable(IReadOnlyList<PatternStats> patterns)
+            : this(new[] { "Pattern", "Objets", "Précision", "UR", "Écart moyen" }, patterns.Select(pattern => new[]
+            {
+                PatternClassifier.DisplayName(pattern.Type),
+                pattern.Count.ToString(),
+                DiagnosticFormat.Percent(pattern.Accuracy),
+                DiagnosticFormat.Number(pattern.Timing.UnstableRate),
+                DiagnosticFormat.SignedMs(pattern.Timing.Mean, "0.0"),
+            }))
+        {
+        }
+
+        public PatternTable(string[] header, IEnumerable<string[]> rows)
         {
             RelativeSizeAxes = Axes.X;
             AutoSizeAxes = Axes.Y;
             Direction = FillDirection.Vertical;
             Spacing = new Vector2(0, 6);
 
-            Add(row(true, "Pattern", "Objets", "Précision", "UR", "Écart moyen"));
+            Add(row(true, header));
 
-            foreach (var pattern in patterns)
-            {
-                Add(row(false,
-                    PatternClassifier.DisplayName(pattern.Type),
-                    pattern.Count.ToString(),
-                    DiagnosticFormat.Percent(pattern.Accuracy),
-                    DiagnosticFormat.Number(pattern.Timing.UnstableRate),
-                    DiagnosticFormat.SignedMs(pattern.Timing.Mean, "0.0")));
-            }
+            foreach (string[] cells in rows)
+                Add(row(false, cells));
         }
 
         private static Drawable row(bool header, params string[] cells)

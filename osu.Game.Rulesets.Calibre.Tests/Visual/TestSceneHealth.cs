@@ -15,6 +15,9 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual
     [TestFixture]
     public partial class TestSceneHealth : PlayerTestScene
     {
+        // Sans cela, PlayerTestScene ajouterait le No Fail du ruleset.
+        protected override bool AllowFail => true;
+
         protected override Ruleset CreatePlayerRuleset() => new CalibreRuleset();
 
         protected override IBeatmap CreateBeatmap(RulesetInfo ruleset)
