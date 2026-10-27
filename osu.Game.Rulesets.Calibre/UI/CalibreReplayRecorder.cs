@@ -11,7 +11,8 @@ using osuTK;
 namespace osu.Game.Rulesets.Calibre.UI
 {
     /// <summary>
-    /// Enregistre les entrées du joueur pendant la partie, pour que lazer sauvegarde un replay relisible et analysable.
+    /// Enregistre les entrées du joueur pendant la partie dans le replay du score en cours.
+    /// Ce replay reste en mémoire (lazer ne le persiste pas pour un ruleset custom) et sert aux analyses post-partie.
     /// </summary>
     public partial class CalibreReplayRecorder : ReplayRecorder<CalibreAction>
     {

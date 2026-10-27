@@ -12,8 +12,12 @@ using osuTK;
 namespace osu.Game.Rulesets.Calibre.Replays
 {
     /// <summary>
-    /// Frame de replay. Convertible au format legacy pour que lazer puisse enregistrer et relire les parties.
+    /// Frame de replay, convertible au format legacy (interface attendue par lazer pour les frames de replay).
     /// </summary>
+    /// <remarks>
+    /// lazer n'écrit de fichier .osr que pour les quatre rulesets officiels (Player.ImportScore) :
+    /// un replay Calibre vit en mémoire jusqu'à l'écran de résultats, où les analyses le consomment.
+    /// </remarks>
     public class CalibreReplayFrame : ReplayFrame, IConvertibleReplayFrame
     {
         /// <summary>
