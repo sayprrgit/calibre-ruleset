@@ -6,6 +6,7 @@ using System.Linq;
 using NUnit.Framework;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Calibre.Objects;
+using osu.Game.Rulesets.Calibre.Objects.Drawables;
 using osu.Game.Rulesets.Calibre.Replays;
 using osuTK;
 
@@ -81,6 +82,29 @@ namespace osu.Game.Rulesets.Calibre.Tests.Logic
             Assert.That(held.Last().Time, Is.EqualTo(slider.EndTime).Within(1e-6));
             Assert.That(held.Last().Position, Is.EqualTo(slider.EndPosition));
             Assert.That(frames[frames.IndexOf(held.Last()) + 1].Actions, Is.Empty, "relâchement après la fin");
+        }
+
+        [Test]
+        public void TestSpinnerIsSpunFastEnough()
+        {
+            var beatmap = TestBeatmaps.DecodePlayable(TestBeatmaps.MIXED_OBJECTS);
+            var spinner = beatmap.HitObjects.OfType<Spinner>().Single();
+
+            var frames = new CalibreAutoGenerator(beatmap).Generate().Frames.Cast<CalibreReplayFrame>()
+                                                          .Where(f => f.Time >= spinner.StartTime && f.Time <= spinner.EndTime)
+                                                          .ToList();
+
+            // Rejoue les frames dans le compteur de rotation utilisé en jeu.
+            var tracker = new SpinnerRotationTracker();
+
+            for (int i = 0; i < frames.Count; i++)
+            {
+                var fromCentre = frames[i].Position - spinner.Position;
+                tracker.AddSample(Math.Atan2(fromCentre.Y, fromCentre.X), i == 0 ? 0 : frames[i].Time - frames[i - 1].Time, frames[i].Actions.Count > 0);
+            }
+
+            Assert.That(tracker.CompletedSpins, Is.GreaterThanOrEqualTo(spinner.SpinsRequired));
+            Assert.That(tracker.CompletedSpins, Is.EqualTo(CalibreAutoGenerator.SPIN_ROTATIONS_PER_SECOND * spinner.Duration / 1000).Within(0.1));
         }
 
         [Test]

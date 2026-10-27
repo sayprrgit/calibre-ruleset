@@ -7,6 +7,7 @@ using System.Threading;
 using osu.Game.Beatmaps;
 using osu.Game.Beatmaps.Legacy;
 using osu.Game.Rulesets.Calibre.Objects;
+using osu.Game.Rulesets.Calibre.UI;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Objects.Types;
 using osuTK;
@@ -51,8 +52,17 @@ namespace osu.Game.Rulesets.Calibre.Beatmaps
 
                     yield break;
 
-                // Les spinners ne sont pas encore pris en charge.
-                case IHasDuration:
+                case IHasDuration endTimeData:
+                    yield return new Spinner
+                    {
+                        StartTime = original.StartTime,
+                        Samples = original.Samples,
+                        EndTime = endTimeData.EndTime,
+                        Position = positionData?.Position ?? CalibrePlayfield.BASE_SIZE / 2,
+                        NewCombo = comboData?.NewCombo ?? false,
+                        ComboOffset = comboData?.ComboOffset ?? 0,
+                    };
+
                     yield break;
 
                 default:

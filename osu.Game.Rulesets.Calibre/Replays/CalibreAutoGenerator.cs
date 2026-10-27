@@ -14,7 +14,7 @@ namespace osu.Game.Rulesets.Calibre.Replays
 {
     /// <summary>
     /// Génère un replay parfait : le curseur rejoint chaque objet et frappe exactement à son instant,
-    /// puis suit le chemin des sliders touche maintenue.
+    /// suit le chemin des sliders touche maintenue et tourne autour des spinners.
     /// </summary>
     public class CalibreAutoGenerator : AutoGenerator<CalibreReplayFrame>
     {
@@ -29,9 +29,19 @@ namespace osu.Game.Rulesets.Calibre.Replays
         public const double ALTERNATE_THRESHOLD = 225;
 
         /// <summary>
-        /// Intervalle entre deux frames pendant un slider (60 Hz).
+        /// Intervalle entre deux frames pendant un slider ou un spinner (60 Hz).
         /// </summary>
         public const double FRAME_INTERVAL = 1000.0 / 60;
+
+        /// <summary>
+        /// Rayon du cercle décrit autour du centre d'un spinner, en pixels de l'aire de jeu.
+        /// </summary>
+        public const float SPIN_RADIUS = 50;
+
+        /// <summary>
+        /// Vitesse de rotation de l'autoplay, sous le plafond de 477 tours/min et au-dessus de l'exigence à OD 10 (4,5 tours/s).
+        /// </summary>
+        public const double SPIN_ROTATIONS_PER_SECOND = 6;
 
         public new Beatmap<CalibreHitObject> Beatmap => (Beatmap<CalibreHitObject>)base.Beatmap;
 
@@ -72,7 +82,7 @@ namespace osu.Game.Rulesets.Calibre.Replays
                 position = positionAt(hitObject, hitTime);
                 Frames.Add(new CalibreReplayFrame(hitTime, position, action));
 
-                // Sliders : la touche reste enfoncée jusqu'à la fin de l'objet.
+                // Sliders et spinners : la touche reste enfoncée jusqu'à la fin de l'objet.
                 double endTime = Math.Max(hitObject.GetEndTime(), hitTime);
 
                 if (endTime > hitTime)
@@ -104,6 +114,10 @@ namespace osu.Game.Rulesets.Calibre.Replays
                 case Slider slider:
                     double progress = slider.Duration > 0 ? Math.Clamp((time - slider.StartTime) / slider.Duration, 0, 1) : 1;
                     return slider.Position + slider.CurvePositionAt(progress);
+
+                case Spinner spinner:
+                    double angle = 2 * Math.PI * SPIN_ROTATIONS_PER_SECOND * Math.Max(0, time - spinner.StartTime) / 1000;
+                    return spinner.Position + SPIN_RADIUS * new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
 
                 default:
                     return hitObject.Position;

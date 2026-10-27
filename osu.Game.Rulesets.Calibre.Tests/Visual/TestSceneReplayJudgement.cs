@@ -176,6 +176,24 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual
             }));
         }
 
+        [Test]
+        public void TestSpinnerWithoutRotationIsMissed()
+        {
+            var spinner = new Spinner { StartTime = hit_circle_time, EndTime = hit_circle_time + 2000, Position = circle_position };
+
+            runReplay(5, new Replay
+            {
+                Frames =
+                {
+                    new CalibreReplayFrame(0, circle_position + new Vector2(50, 0)),
+                    new CalibreReplayFrame(spinner.StartTime, circle_position + new Vector2(50, 0), CalibreAction.Key1),
+                    new CalibreReplayFrame(spinner.EndTime + 20, circle_position + new Vector2(50, 0)),
+                },
+            }, spinner);
+
+            AddAssert("spinner manqué", () => results.Select(r => r.Type), () => Is.EqualTo(new[] { HitResult.Miss }));
+        }
+
         /// <summary>
         /// Frames à 60 Hz qui suivent la bille du slider ; la touche reste enfoncée jusqu'à <paramref name="releaseTime"/>.
         /// </summary>

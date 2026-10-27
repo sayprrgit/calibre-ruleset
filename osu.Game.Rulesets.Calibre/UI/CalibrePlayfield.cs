@@ -72,6 +72,8 @@ namespace osu.Game.Rulesets.Calibre.UI
             RegisterPool<SliderTick, DrawableSliderTick>(10, 100);
             RegisterPool<SliderRepeat, DrawableSliderRepeat>(5, 50);
             RegisterPool<SliderTailCircle, DrawableSliderTail>(10, 100);
+
+            RegisterPool<Spinner, DrawableSpinner>(2, 20);
         }
 
         protected override GameplayCursorContainer CreateCursor() => new CalibreCursorContainer();

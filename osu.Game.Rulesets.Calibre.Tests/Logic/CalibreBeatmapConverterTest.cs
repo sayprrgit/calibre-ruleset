@@ -22,13 +22,16 @@ namespace osu.Game.Rulesets.Calibre.Tests.Logic
         }
 
         [Test]
-        public void TestCirclesAndSlidersAreConvertedAndSpinnersSkipped()
+        public void TestEachObjectTypeIsConverted()
         {
             var objects = TestBeatmaps.DecodePlayable(TestBeatmaps.MIXED_OBJECTS).HitObjects.Cast<CalibreHitObject>().ToList();
 
-            Assert.That(objects.Select(o => o.GetType()), Is.EqualTo(new[] { typeof(HitCircle), typeof(Slider), typeof(HitCircle) }));
-            Assert.That(objects.Select(o => o.StartTime), Is.EqualTo(new[] { 1000d, 2000d, 5000d }));
-            Assert.That(objects.Select(o => o.Position), Is.EqualTo(new[] { new Vector2(100, 100), new Vector2(200, 150), new Vector2(400, 300) }));
+            Assert.That(objects.Select(o => o.GetType()), Is.EqualTo(new[] { typeof(HitCircle), typeof(Slider), typeof(Spinner), typeof(HitCircle) }));
+            Assert.That(objects.Select(o => o.StartTime), Is.EqualTo(new[] { 1000d, 2000d, 3000d, 5000d }));
+            Assert.That(objects.Select(o => o.Position), Is.EqualTo(new[]
+            {
+                new Vector2(100, 100), new Vector2(200, 150), new Vector2(256, 192), new Vector2(400, 300),
+            }));
         }
 
         [Test]
@@ -40,6 +43,17 @@ namespace osu.Game.Rulesets.Calibre.Tests.Logic
             Assert.That(slider.Velocity, Is.EqualTo(0.28).Within(1e-9));
             Assert.That(slider.Duration, Is.EqualTo(100 / 0.28).Within(1e-6));
             Assert.That(slider.EndPosition, Is.EqualTo(new Vector2(300, 150)));
+        }
+
+        [Test]
+        public void TestSpinnerKeepsItsDuration()
+        {
+            var spinner = TestBeatmaps.DecodePlayable(TestBeatmaps.MIXED_OBJECTS).HitObjects.OfType<Spinner>().Single();
+
+            Assert.That(spinner.EndTime, Is.EqualTo(4000));
+
+            // OD 8 : 0,6 x 6,5 tours/s pendant 1 s, tronqué à 3 tours.
+            Assert.That(spinner.SpinsRequired, Is.EqualTo(3));
         }
 
         [Test]
@@ -59,8 +73,8 @@ namespace osu.Game.Rulesets.Calibre.Tests.Logic
 
             // Le slider suit le premier cercle dans le même combo ; le dernier cercle porte le drapeau « nouveau combo ».
             Assert.That(objects[1].IndexInCurrentCombo, Is.EqualTo(1));
-            Assert.That(objects[2].IndexInCurrentCombo, Is.EqualTo(0));
-            Assert.That(objects[2].ComboIndex, Is.GreaterThan(objects[1].ComboIndex));
+            Assert.That(objects[3].IndexInCurrentCombo, Is.EqualTo(0));
+            Assert.That(objects[3].ComboIndex, Is.GreaterThan(objects[1].ComboIndex));
         }
     }
 }
