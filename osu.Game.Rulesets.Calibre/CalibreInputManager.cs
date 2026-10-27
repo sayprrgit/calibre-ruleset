@@ -13,6 +13,21 @@ namespace osu.Game.Rulesets.Calibre
             : base(ruleset, 0, SimultaneousBindingMode.Unique)
         {
         }
+
+        /// <summary>
+        /// Vrai si au moins une entrée de frappe est maintenue. Appelé à chaque frame par les sliders et spinners :
+        /// <c>PressedActions</c> est une structure énumérée sans allocation.
+        /// </summary>
+        public bool IsAnyHitActionPressed()
+        {
+            foreach (var action in KeyBindingContainer.PressedActions)
+            {
+                if (action.IsHitAction())
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>

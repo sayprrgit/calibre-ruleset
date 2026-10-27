@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Lynho. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using System.Linq;
 using NUnit.Framework;
 using osu.Game.Beatmaps;
@@ -54,6 +55,41 @@ namespace osu.Game.Rulesets.Calibre.Tests.Logic
 
             Assert.That(release.Actions, Is.Empty);
             Assert.That(release.Time, Is.LessThan(60));
+        }
+
+        [Test]
+        public void TestSliderIsFollowedWithTheKeyHeld()
+        {
+            var beatmap = TestBeatmaps.DecodePlayable(TestBeatmaps.SLIDER_WITH_TICKS_AND_REPEATS);
+            var slider = (Slider)beatmap.HitObjects.Single();
+
+            var frames = new CalibreAutoGenerator(beatmap).Generate().Frames.Cast<CalibreReplayFrame>().ToList();
+            var held = frames.Where(f => f.Time >= slider.StartTime && f.Time <= slider.EndTime).ToList();
+
+            Assert.That(held, Has.All.Matches<CalibreReplayFrame>(f => f.Actions.Count == 1), "touche maintenue sur tout le slider");
+
+            for (int i = 1; i < held.Count; i++)
+                Assert.That(held[i].Time - held[i - 1].Time, Is.LessThanOrEqualTo(CalibreAutoGenerator.FRAME_INTERVAL + 1e-6), $"frame {i}");
+
+            // Chaque frame est sur le chemin : à l'instant d'un tick, le curseur est sur le tick.
+            foreach (var tick in slider.NestedHitObjects.OfType<SliderTick>())
+            {
+                var closest = held.OrderBy(f => Math.Abs(f.Time - tick.StartTime)).First();
+                Assert.That(Vector2.Distance(closest.Position, tick.Position), Is.LessThan(slider.Radius), $"tick à {tick.StartTime}");
+            }
+
+            Assert.That(held.Last().Time, Is.EqualTo(slider.EndTime).Within(1e-6));
+            Assert.That(held.Last().Position, Is.EqualTo(slider.EndPosition));
+            Assert.That(frames[frames.IndexOf(held.Last()) + 1].Actions, Is.Empty, "relâchement après la fin");
+        }
+
+        [Test]
+        public void TestFramesAreStrictlyOrderedWithEveryObjectType()
+        {
+            var frames = new CalibreAutoGenerator(TestBeatmaps.DecodePlayable(TestBeatmaps.MIXED_OBJECTS)).Generate().Frames;
+
+            for (int i = 1; i < frames.Count; i++)
+                Assert.That(frames[i].Time, Is.GreaterThan(frames[i - 1].Time), $"frame {i}");
         }
 
         private static osu.Game.Replays.Replay generate(params double[] times) => new CalibreAutoGenerator(createBeatmap(times)).Generate();

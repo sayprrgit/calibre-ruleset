@@ -26,6 +26,7 @@ namespace osu.Game.Rulesets.Calibre.UI
         public static readonly Vector2 BASE_SIZE = new Vector2(512, 384);
 
         private readonly Container<DrawableCalibreJudgement> judgementLayer;
+        private readonly Container approachRingLayer;
         private readonly DrawablePool<DrawableCalibreJudgement> judgementPool;
         private readonly StartTimeOrderedHitPolicy hitPolicy;
 
@@ -52,6 +53,7 @@ namespace osu.Game.Rulesets.Calibre.UI
                 },
                 judgementLayer = new Container<DrawableCalibreJudgement> { RelativeSizeAxes = Axes.Both },
                 HitObjectContainer,
+                approachRingLayer = new Container { RelativeSizeAxes = Axes.Both },
                 judgementPool = new DrawablePool<DrawableCalibreJudgement>(20, 100),
             };
 
@@ -64,6 +66,12 @@ namespace osu.Game.Rulesets.Calibre.UI
         private void load()
         {
             RegisterPool<HitCircle, DrawableHitCircle>(20, 100);
+
+            RegisterPool<Slider, DrawableSlider>(10, 100);
+            RegisterPool<SliderHeadCircle, DrawableSliderHead>(10, 100);
+            RegisterPool<SliderTick, DrawableSliderTick>(10, 100);
+            RegisterPool<SliderRepeat, DrawableSliderRepeat>(5, 50);
+            RegisterPool<SliderTailCircle, DrawableSliderTail>(10, 100);
         }
 
         protected override GameplayCursorContainer CreateCursor() => new CalibreCursorContainer();
@@ -74,8 +82,18 @@ namespace osu.Game.Rulesets.Calibre.UI
         {
             base.OnNewDrawableHitObject(drawableHitObject);
 
-            // Appelé une fois par instance poolée : le délégué est réutilisé à chaque réutilisation de l'objet.
+            // Appelé une fois par instance poolée (têtes de slider comprises) : le délégué sert à chaque réutilisation de l'objet.
             ((DrawableCalibreHitObject)drawableHitObject).CheckHittable = hitPolicy.CheckHittable;
+
+            drawableHitObject.OnLoadComplete += onDrawableHitObjectLoaded;
+        }
+
+        private void onDrawableHitObjectLoaded(Drawable drawable)
+        {
+            // Les objets plus récents sont dessinés sous les plus anciens : sans ce relais, l'anneau d'approche d'un cercle
+            // serait masqué par le corps d'un slider qui le précède. Le proxy dessine l'anneau au-dessus de tous les objets.
+            if (drawable is DrawableHitCircle circle)
+                approachRingLayer.Add(circle.ApproachRing.CreateProxy());
         }
 
         private void onNewResult(DrawableHitObject judgedObject, JudgementResult result)

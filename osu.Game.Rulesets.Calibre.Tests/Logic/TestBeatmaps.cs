@@ -41,6 +41,30 @@ SliderTickRate:1
 400,300,5000,5,0,0:0:0:0:
 ";
 
+        /// <summary>
+        /// Un slider horizontal de 280 px parcouru trois fois (deux répétitions) : 140 px par temps à 500 ms le temps,
+        /// soit 1000 ms par parcours, un tick au milieu de chaque parcours et une fin à 4000 ms.
+        /// </summary>
+        public const string SLIDER_WITH_TICKS_AND_REPEATS = @"osu file format v14
+
+[General]
+Mode: 0
+
+[Difficulty]
+HPDrainRate:5
+CircleSize:4
+OverallDifficulty:8
+ApproachRate:9
+SliderMultiplier:1.4
+SliderTickRate:1
+
+[TimingPoints]
+0,500,4,2,0,100,1,0
+
+[HitObjects]
+100,100,1000,2,0,L|380:100,3,280
+";
+
         public static Beatmap Decode(string osuFileContent)
         {
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(osuFileContent));
