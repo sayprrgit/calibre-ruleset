@@ -30,6 +30,27 @@ namespace osu.Game.Rulesets.Calibre.UI
 
         public static Colour4 ForCombo(int comboIndex) => combo_colours[(comboIndex % combo_colours.Length + combo_colours.Length) % combo_colours.Length];
 
+        /// <summary>
+        /// Couleur propre à chaque entrée dans les graphiques du diagnostic.
+        /// </summary>
+        public static Colour4 ForAction(CalibreAction action)
+        {
+            switch (action)
+            {
+                case CalibreAction.Key1:
+                    return ACCENT;
+
+                case CalibreAction.Key2:
+                    return GREAT;
+
+                case CalibreAction.Mouse1:
+                    return OK;
+
+                default:
+                    return combo_colours[3];
+            }
+        }
+
         public static Colour4 ForResult(HitResult result)
         {
             switch (result)
