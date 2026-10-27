@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 // Déroulé adapté de ReplayStabilityTestScene d'osu! (https://github.com/ppy/osu), © ppy Pty Ltd, licence MIT.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -14,6 +15,8 @@ using osu.Game.Rulesets.Calibre.Objects;
 using osu.Game.Rulesets.Calibre.Replays;
 using osu.Game.Rulesets.Calibre.UI;
 using osu.Game.Rulesets.Judgements;
+using osu.Game.Rulesets.Objects;
+using osu.Game.Rulesets.Objects.Types;
 using osu.Game.Rulesets.Scoring;
 using osu.Game.Scoring;
 using osu.Game.Screens.Play;
@@ -113,11 +116,113 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual
             AddAssert("aucune touche attribuée", () => ((CalibreHitCircleJudgementResult)results.Single()).HitAction, () => Is.Null);
         }
 
-        private void runReplay(float overallDifficulty, Replay replay)
+        /// <summary>
+        /// Slider horizontal de 200 px à 0,14 px/ms (sans point de timing) : tick à 140 px (1100 ms), fin à ~1529 ms.
+        /// </summary>
+        private static Slider createSlider() => new Slider
+        {
+            StartTime = hit_circle_time,
+            Position = new Vector2(156, 192),
+            Path = new SliderPath(PathType.LINEAR, new[] { Vector2.Zero, new Vector2(200, 0) }),
+        };
+
+        [Test]
+        public void TestSliderHeldToTheEnd()
+        {
+            var slider = createSlider();
+
+            runReplay(5, followSlider(slider, slider.StartTime + 1600), slider);
+
+            AddAssert("tête Great, tick, fin, slider touché", () => results.Select(r => r.Type), () => Is.EqualTo(new[]
+            {
+                HitResult.Great, HitResult.LargeTickHit, HitResult.SliderTailHit, HitResult.IgnoreHit,
+            }));
+        }
+
+        [Test]
+        public void TestSliderReleasedEarly()
+        {
+            var slider = createSlider();
+
+            // La touche est relâchée à 300 ms, avant le tick : le curseur continue de suivre la bille, sans effet.
+            runReplay(5, followSlider(slider, 300), slider);
+
+            AddAssert("tête Great puis tick et fin manqués", () => results.Select(r => r.Type), () => Is.EqualTo(new[]
+            {
+                HitResult.Great, HitResult.LargeTickMiss, HitResult.IgnoreMiss, HitResult.IgnoreHit,
+            }));
+        }
+
+        [Test]
+        public void TestSliderLeftByTheCursor()
+        {
+            var slider = createSlider();
+
+            // Touche maintenue, mais le curseur reste sur la tête : la bille s'éloigne au-delà de la zone de suivi (2,4 rayons).
+            runReplay(5, new Replay
+            {
+                Frames =
+                {
+                    new CalibreReplayFrame(0, slider.Position),
+                    new CalibreReplayFrame(slider.StartTime, slider.Position, CalibreAction.Key1),
+                    new CalibreReplayFrame(slider.StartTime + 1700, slider.Position, CalibreAction.Key1),
+                    new CalibreReplayFrame(slider.StartTime + 1720, slider.Position),
+                },
+            }, slider);
+
+            AddAssert("tête Great, tick et fin manqués", () => results.Select(r => r.Type).Take(3), () => Is.EqualTo(new[]
+            {
+                HitResult.Great, HitResult.LargeTickMiss, HitResult.IgnoreMiss,
+            }));
+        }
+
+        [Test]
+        public void TestSpinnerWithoutRotationIsMissed()
+        {
+            var spinner = new Spinner { StartTime = hit_circle_time, EndTime = hit_circle_time + 2000, Position = circle_position };
+
+            runReplay(5, new Replay
+            {
+                Frames =
+                {
+                    new CalibreReplayFrame(0, circle_position + new Vector2(50, 0)),
+                    new CalibreReplayFrame(spinner.StartTime, circle_position + new Vector2(50, 0), CalibreAction.Key1),
+                    new CalibreReplayFrame(spinner.EndTime + 20, circle_position + new Vector2(50, 0)),
+                },
+            }, spinner);
+
+            AddAssert("spinner manqué", () => results.Select(r => r.Type), () => Is.EqualTo(new[] { HitResult.Miss }));
+        }
+
+        /// <summary>
+        /// Frames à 60 Hz qui suivent la bille du slider ; la touche reste enfoncée jusqu'à <paramref name="releaseTime"/>.
+        /// </summary>
+        private static Replay followSlider(Slider slider, double releaseTime)
+        {
+            var replay = new Replay();
+            replay.Frames.Add(new CalibreReplayFrame(0, slider.Position));
+
+            // Durée calculée comme en jeu : 200 px à 0,14 px/ms.
+            double duration = 200 / 0.14;
+
+            for (double time = slider.StartTime; time <= slider.StartTime + duration + 100; time += 1000 / 60.0)
+            {
+                double progress = Math.Clamp((time - slider.StartTime) / duration, 0, 1);
+                var position = slider.Position + new Vector2((float)(200 * progress), 0);
+
+                replay.Frames.Add(time < releaseTime
+                    ? new CalibreReplayFrame(time, position, CalibreAction.Key1)
+                    : new CalibreReplayFrame(time, position));
+            }
+
+            return replay;
+        }
+
+        private void runReplay(float overallDifficulty, Replay replay, CalibreHitObject? hitObject = null)
         {
             var beatmap = new Beatmap<CalibreHitObject>
             {
-                HitObjects = { new HitCircle { StartTime = hit_circle_time, Position = circle_position } },
+                HitObjects = { hitObject ?? new HitCircle { StartTime = hit_circle_time, Position = circle_position } },
                 Difficulty = new BeatmapDifficulty { OverallDifficulty = overallDifficulty },
                 BeatmapInfo = { Ruleset = new CalibreRuleset().RulesetInfo },
             };

@@ -12,8 +12,8 @@ using osu.Game.Rulesets.UI;
 namespace osu.Game.Rulesets.Calibre.UI
 {
     /// <summary>
-    /// « Note lock » : les cercles doivent être frappés dans l'ordre chronologique.
-    /// Frapper un cercle fait manquer tous les cercles antérieurs encore non jugés.
+    /// « Note lock » : les cercles et têtes de slider doivent être frappés dans l'ordre chronologique.
+    /// En frapper un fait manquer tous ceux qui le précèdent et ne sont pas encore jugés. Les spinners ne bloquent rien.
     /// </summary>
     /// <remarks>
     /// Appelée uniquement sur une frappe ou un jugement, jamais à chaque frame.
@@ -67,12 +67,30 @@ namespace osu.Game.Rulesets.Calibre.UI
 
         private static bool canBlockFutureHits(DrawableHitObject hitObject) => hitObject is DrawableHitCircle;
 
+        /// <summary>
+        /// Objets vivants dans l'ordre chronologique, chaque slider étant représenté par sa tête (seule partie frappable).
+        /// </summary>
         private IEnumerable<DrawableHitObject> aliveObjects()
         {
             if (HitObjectContainer == null)
                 throw new InvalidOperationException($"{nameof(HitObjectContainer)} doit être défini avant utilisation.");
 
-            return HitObjectContainer.AliveObjects;
+            foreach (var obj in HitObjectContainer.AliveObjects)
+            {
+                switch (obj)
+                {
+                    case DrawableSlider slider:
+                        if (slider.HeadCircle != null)
+                            yield return slider.HeadCircle;
+
+                        break;
+
+                    default:
+                        yield return obj;
+
+                        break;
+                }
+            }
         }
     }
 }
