@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Lynho. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
 using osu.Framework.Graphics.Shapes;
@@ -64,7 +63,7 @@ namespace osu.Game.Rulesets.Calibre.Diagnostics.Charts
                             new Box
                             {
                                 RelativeSizeAxes = Axes.Both,
-                                Colour = zone.Attempts == 0 ? Colour4.Gray.Opacity(0.3f) : colourFor(zone.ErrorIndex),
+                                Colour = zone.Attempts == 0 ? Colour4.Gray.Opacity(0.3f) : CalibreColours.ForError(zone.ErrorIndex / worst_index),
                             },
                             new FillFlowContainer
                             {
@@ -91,24 +90,6 @@ namespace osu.Game.Rulesets.Calibre.Diagnostics.Charts
                 Child = grid,
             };
         }
-
-        /// <summary>
-        /// Dégradé vert → jaune → rouge sur l'indice d'erreur, assombri pour garder le texte lisible.
-        /// </summary>
-        private static Colour4 colourFor(double errorIndex)
-        {
-            float t = (float)Math.Clamp(errorIndex / worst_index, 0, 1);
-
-            var good = Colour4.FromHex("#3ddc97");
-            var medium = Colour4.FromHex("#ffcc33");
-            var bad = Colour4.FromHex("#ff5566");
-
-            var colour = t < 0.5f ? interpolate(good, medium, t * 2) : interpolate(medium, bad, (t - 0.5f) * 2);
-            return colour.Darken(0.6f);
-        }
-
-        private static Colour4 interpolate(Colour4 from, Colour4 to, float t)
-            => new Colour4(from.R + (to.R - from.R) * t, from.G + (to.G - from.G) * t, from.B + (to.B - from.B) * t, 1);
 
         private static OsuSpriteText text(string value, float size, FontWeight weight = FontWeight.Regular) => new OsuSpriteText
         {

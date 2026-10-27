@@ -3,7 +3,7 @@
 Ruleset d'entraînement et d'analyse pour **osu!lazer**, orienté aim et tap. Calibre joue les beatmaps osu!standard
 existantes, mesure finement les erreurs du joueur et, à terme, génère des exercices ciblés sur ses points faibles.
 
-> Projet en cours. Ce README décrit l'état au **jalon 3** et sera réécrit au jalon 6.
+> Projet en cours. Ce README décrit l'état au **jalon 4** et sera réécrit au jalon 6.
 
 ## Feuille de route
 
@@ -12,7 +12,7 @@ existantes, mesure finement les erreurs du joueur et, à terme, génère des exe
 | J1 | Ruleset minimal jouable : conversion, cercles, jugement, autoplay | ✅ |
 | J2 | Sliders, spinners, score, HP, HUD | ✅ |
 | J3 | Module Diagnostic : latence, stabilité par touche, précision d'aim par zone | ✅ |
-| J4 | Module Analyse : heatmap, timeline d'erreur, classement par pattern | ⏳ |
+| J4 | Module Analyse : heatmap, timeline d'erreur, classement par pattern | ✅ |
 | J5 | Module Entraînement adaptatif : profil local et générateur déterministe | ⏳ |
 | J6 | Finitions, captures, README final | ⏳ |
 
@@ -111,6 +111,33 @@ fichier horodaté, par exemple `calibre-diagnostic-20261027-163012.json`. Il con
 
 Deux exports se comparent ainsi d'un réglage à l'autre.
 
+## Module Analyse (J4)
+
+Après chaque partie, l'écran de résultats de lazer affiche les panneaux de Calibre. Ils sont calculés à partir des
+`HitEvents` du score, y compris pour un replay revu juste après la partie.
+
+- **Distribution des erreurs de timing, erreur moyenne et UR** : ce sont les composants de lazer, réutilisés tels quels.
+- **Erreur de timing au fil de la map** : chaque frappe est placée dans le temps, et les misses sont marqués en bas.
+  Les passages où l'UR monte sont surlignés en rouge.
+- **Heatmap des erreurs de position** : une grille 16x12 de l'aire de jeu, où chaque case est teintée selon l'écart
+  moyen entre le curseur et le centre des cibles qu'elle contient. Le panneau donne aussi le biais moyen de visée.
+- **Classement par pattern** : streams, sauts courts ou longs, à angle aigu ou ouvert, sliders et objets isolés. Pour
+  chacun, il donne la précision, l'UR et l'écart moyen.
+
+**Méthode.**
+
+- **Calcul en arrière-plan.** lazer appelle `CreateStatisticsForScore` dans une tâche de fond : toute l'analyse se
+  fait là, et les panneaux ne font qu'afficher.
+- **Appariement.** L'écran de résultats recrée la beatmap. Chaque `HitEvent` est donc rattaché à son objet par instant
+  et position, ce qui donne aussi la fin et la sortie des sliders.
+- **Classement d'un objet,** d'après le mouvement qui y mène depuis la fin de l'objet précédent :
+  - **isolé** au-delà de 500 ms (une noire à 120 BPM) ;
+  - **stream** sous 125 ms (une double croche à 120 BPM) et 1,5 diamètre d'espacement ;
+  - **saut** sinon. Il est **long** à partir de 3 diamètres et **aigu** si l'angle au sommet est sous 90°.
+- **Sections instables.** Ce sont des fenêtres glissantes de 16 frappes dont l'UR atteint 1,25 fois l'UR de la partie,
+  avec au moins 10 points de plus. Les fenêtres qui se chevauchent sont fusionnées.
+- **Temps réels.** Temps et écarts sont divisés par la vitesse de jeu, comme l'UR de lazer.
+
 ## Limites connues
 
 - Pas encore de *stacking* des objets superposés, ni de corps de slider qui se dessine progressivement.
@@ -124,6 +151,10 @@ Deux exports se comparent ainsi d'un réglage à l'autre.
 - Un test de stabilité mesure les touches utilisées pendant ce test. Tester la souris après le clavier remplace le
   résultat précédent : il faut exporter entre les deux.
 - La comparaison de deux exports se fait hors du jeu, sur les fichiers JSON.
+- Les seuils de classement des patterns sont fixes et ne s'adaptent pas au BPM de la map. Un saut lent mais espacé
+  de moins d'un diamètre compte comme un saut court.
+- Sans fichier `.osr` pour un ruleset custom, l'analyse n'est disponible que juste après la partie, ou pour un replay
+  encore en mémoire.
 
 ## Contraintes découvertes
 
