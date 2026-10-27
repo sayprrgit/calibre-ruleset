@@ -36,6 +36,9 @@ namespace osu.Game.Rulesets.Calibre
         public override IBeatmapConverter CreateBeatmapConverter(IBeatmap beatmap) =>
             new CalibreBeatmapConverter(beatmap, this);
 
+        // Le processeur de base calcule les combos (numéros et couleurs) ; sans lui, tous les cercles porteraient le numéro 1.
+        public override IBeatmapProcessor CreateBeatmapProcessor(IBeatmap beatmap) => new BeatmapProcessor(beatmap);
+
         public override ScoreProcessor CreateScoreProcessor() => new CalibreScoreProcessor(this);
 
         public override DifficultyCalculator CreateDifficultyCalculator(IWorkingBeatmap beatmap) =>
