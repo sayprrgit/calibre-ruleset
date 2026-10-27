@@ -150,6 +150,8 @@ namespace osu.Game.Rulesets.Calibre.Objects.Drawables
         {
             switch (state)
             {
+                // Pas d'Expire() ici : l'objet doit rester vivant après son instant de frappe
+                // pour accepter une frappe tardive puis être jugé Miss à la fin de la fenêtre.
                 case ArmedState.Idle:
                     HitArea.Reset();
                     break;
@@ -158,16 +160,16 @@ namespace osu.Game.Rulesets.Calibre.Objects.Drawables
                     ApproachRing.FadeOut();
                     CirclePiece.ScaleTo(1.4f, 240, Easing.OutQuint);
                     this.FadeOut(240, Easing.OutQuint);
+                    Expire();
                     break;
 
                 case ArmedState.Miss:
                     ApproachRing.FadeOut();
                     this.FadeColour(CalibreColours.MISS, 100);
                     this.FadeOut(160, Easing.In);
+                    Expire();
                     break;
             }
-
-            Expire();
         }
 
         protected override void OnFree()
