@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un nouveau push annule le run encore en cours sur la même branche ou PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  build-test:
+    name: Build et tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet
+        uses: actions/cache@v6
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', 'Directory.Build.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore osu.Game.Rulesets.Calibre.sln
+
+      - name: Build
+        run: dotnet build osu.Game.Rulesets.Calibre.sln -c Release --no-restore
+
+      # Les scènes visuelles tournent sur un hôte headless : aucun GPU n'est nécessaire sur le runner.
+      - name: Test
+        run: dotnet test osu.Game.Rulesets.Calibre.sln -c Release --no-build --logger "trx;LogFileName=results.trx" --results-directory TestResults
+
+      - name: Résultats des tests
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults/*.trx
+          if-no-files-found: warn
+
+      - name: DLL du ruleset
+        uses: actions/upload-artifact@v7
+        with:
+          name: osu.Game.Rulesets.Calibre
+          path: osu.Game.Rulesets.Calibre/bin/Release/net10.0/osu.Game.Rulesets.Calibre.dll
+          if-no-files-found: error
