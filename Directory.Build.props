@@ -3,8 +3,20 @@
   <PropertyGroup>
     <ApplicationManifest>$(MSBuildThisFileDirectory)app.manifest</ApplicationManifest>
   </PropertyGroup>
+  <PropertyGroup Label="Language">
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
   <PropertyGroup Label="Documentation">
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Label="NuGet">
+    <!--
+      Les alertes de vulnérabilité NuGet portent sur des dépendances transitives de ppy.osu.Game
+      (ImageSharp, AutoMapper…) : elles sont fournies par lazer à l'exécution et ne sont pas
+      embarquées dans la DLL du ruleset. On n'audite donc que nos dépendances directes.
+    -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 </Project>
