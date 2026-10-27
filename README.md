@@ -3,14 +3,14 @@
 Ruleset d'entraînement et d'analyse pour **osu!lazer**, orienté aim et tap. Calibre joue les beatmaps osu!standard
 existantes, mesure finement les erreurs du joueur et, à terme, génère des exercices ciblés sur ses points faibles.
 
-> Projet en cours. Ce README décrit l'état au **jalon 1** et sera réécrit au jalon 6.
+> Projet en cours. Ce README décrit l'état au **jalon 2** et sera réécrit au jalon 6.
 
 ## Feuille de route
 
 | Jalon | Contenu | État |
 |---|---|---|
 | J1 | Ruleset minimal jouable : conversion, cercles, jugement, autoplay | ✅ |
-| J2 | Sliders, spinners, score, HP, HUD | ⏳ |
+| J2 | Sliders, spinners, score, HP, HUD | ✅ |
 | J3 | Module Diagnostic : latence, stabilité par touche, précision d'aim par zone | ⏳ |
 | J4 | Module Analyse : heatmap, timeline d'erreur, classement par pattern | ⏳ |
 | J5 | Module Entraînement adaptatif : profil local et générateur déterministe | ⏳ |
@@ -43,16 +43,44 @@ powershell -ExecutionPolicy Bypass -File scripts\install.ps1
 Le script compile en Release et copie `osu.Game.Rulesets.Calibre.dll` dans **`%APPDATA%\osu\rulesets\`**.
 Redémarrer ensuite lazer : Calibre apparaît dans la liste des modes de jeu.
 
-## Choix techniques (J1)
+## Choix techniques
 
 - **Grandeurs d'osu!standard.** Fenêtres de jugement, rayon des cercles, préempt et cadrage 512x384 sont identiques :
   un UR mesuré dans Calibre est comparable à celui du jeu.
 - **Zéro allocation en jeu.** Les drawables et les libellés de jugement sont poolés. Le jugement passe par des
-  lambdas statiques avec état en paramètre, sans fermeture.
+  lambdas statiques avec état en paramètre, sans fermeture. Le suivi des sliders et la rotation des spinners,
+  calculés à chaque frame, n'allouent rien non plus.
 - **Quatre entrées distinctes.** K1, K2, M1 et M2 restent séparées, au lieu d'être fusionnées en « gauche / droite ».
   Elles sont enregistrées avec chaque frappe, pour mesurer la stabilité touche par touche.
-- **Aucune dépendance au ruleset osu!.** Le convertisseur et la politique de note lock sont réécrits d'après le source
-  officiel (MIT), et tous les visuels sont dessinés en code.
+- **Aucune dépendance au ruleset osu!.** Le convertisseur, les sliders et la politique de note lock sont réécrits
+  d'après le source officiel (MIT), et tous les visuels sont dessinés en code.
+
+### Sliders et spinners (J2)
+
+- **Seuls les cercles et têtes de slider entrent dans l'UR.** Les ticks, répétitions, fins de slider et spinners
+  n'ont pas de fenêtre de timing : ils sont jugés au suivi ou à la rotation, et ne faussent pas les statistiques de
+  timing des jalons suivants.
+- **Règles de lazer.** La zone de suivi passe à 2,4 rayons une fois acquise, la fin du slider est jugée sur le suivi
+  36 ms avant la fin, et une fin manquée coûte de la précision sans casser le combo.
+- **Spinners.** Le nombre de tours requis dépend de l'OD comme dans osu!. La rotation est comptée dans les deux sens
+  et plafonnée à 477 tours/min. Le calcul est une classe pure, testée unitairement.
+- **Lisibilité.** Les anneaux d'approche sont relayés au-dessus de tous les objets : un slider qui précède un cercle
+  ne masque plus son anneau.
+
+### Score, vie et HUD (J2)
+
+- Le score et la vie s'appuient sur les processeurs de lazer. Le drain est calibré sur toute la beatmap, ticks
+  compris, et l'écran de résultats ne liste que les jugements utilisés par Calibre.
+- Le HUD de lazer fonctionne tel quel : score, précision, combo, jauge de vie et compteur des quatre touches.
+- Calibre ajoute sous l'aire de jeu un panneau par touche : nombre de frappes réussies et écart moyen à l'instant
+  parfait, mis à jour à chaque jugement.
+
+## Limites connues
+
+- Pas encore de *stacking* des objets superposés, ni de corps de slider qui se dessine progressivement.
+- Le suivi d'un slider accepte toute touche maintenue, même enfoncée avant le slider.
+- En replay, revenir en arrière pendant un spinner ne recalcule pas sa rotation.
+- Ni bonus de spinner ni son de glissement sur les sliders.
 
 ## Contraintes découvertes
 
