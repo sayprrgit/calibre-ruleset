@@ -3,11 +3,14 @@
 
 using System.Linq;
 using NUnit.Framework;
+using osu.Framework.Testing;
 using osu.Game.Beatmaps;
+using osu.Game.Rulesets.Calibre.Judgements;
 using osu.Game.Rulesets.Calibre.Objects;
 using osu.Game.Rulesets.Calibre.UI;
 using osu.Game.Rulesets.Objects;
 using osu.Game.Rulesets.Objects.Types;
+using osu.Game.Screens.Play.HUD;
 using osu.Game.Tests.Visual;
 using osuTK;
 
@@ -15,7 +18,7 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual
 {
     /// <summary>
     /// Joue en autoplay, dans un vrai Player, des sliders de chaque forme (avec ticks et répétitions), un spinner
-    /// puis un cercle : chaque élément doit obtenir son meilleur jugement.
+    /// puis un cercle : chaque élément doit obtenir son meilleur jugement, et le HUD doit refléter la partie.
     /// </summary>
     [TestFixture]
     public partial class TestSceneSliderSpinnerPlayer : PlayerTestScene
@@ -80,6 +83,23 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual
             AddAssert("précision de 100 %", () => Player.ScoreProcessor.Accuracy.Value, () => Is.EqualTo(1));
             AddAssert("combo complet", () => Player.ScoreProcessor.HighestCombo.Value, () => Is.EqualTo(Player.ScoreProcessor.MaximumCombo));
             AddAssert("pas d'échec", () => Player.GameplayState.HasFailed, () => Is.False);
+        }
+
+        [Test]
+        public void TestHudReflectsTheInputs()
+        {
+            AddUntilStep("tous les objets jugés", () => Player.ScoreProcessor.HasCompleted.Value);
+
+            AddAssert("compteur de touches : K1, K2, M1, M2", () => Player.ChildrenOfType<InputCountController>().Single().Triggers.Count, () => Is.EqualTo(4));
+
+            // Les frappes chronométrées sont celles des cercles et des têtes de slider : 3 têtes + 1 cercle.
+            AddAssert("panneau par touche : 4 frappes", () =>
+            {
+                var display = Player.ChildrenOfType<KeyOffsetDisplay>().Single();
+                return new[] { CalibreAction.Key1, CalibreAction.Key2, CalibreAction.Mouse1, CalibreAction.Mouse2 }.Sum(display.CountFor);
+            }, () => Is.EqualTo(Player.Results.OfType<CalibreHitCircleJudgementResult>().Count()));
+
+            AddAssert("le HUD a une jauge de vie", () => Player.HUDOverlay.ChildrenOfType<HealthDisplay>().Any(), () => Is.True);
         }
     }
 }

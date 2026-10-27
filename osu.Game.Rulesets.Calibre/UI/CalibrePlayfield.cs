@@ -25,6 +25,8 @@ namespace osu.Game.Rulesets.Calibre.UI
         /// </summary>
         public static readonly Vector2 BASE_SIZE = new Vector2(512, 384);
 
+        public readonly KeyOffsetDisplay KeyOffsetDisplay;
+
         private readonly Container<DrawableCalibreJudgement> judgementLayer;
         private readonly Container approachRingLayer;
         private readonly DrawablePool<DrawableCalibreJudgement> judgementPool;
@@ -55,6 +57,13 @@ namespace osu.Game.Rulesets.Calibre.UI
                 HitObjectContainer,
                 approachRingLayer = new Container { RelativeSizeAxes = Axes.Both },
                 judgementPool = new DrawablePool<DrawableCalibreJudgement>(20, 100),
+                // Sous l'aire de jeu : la marge laissée par le cadrage à 80 % de la hauteur est libre de tout objet.
+                KeyOffsetDisplay = new KeyOffsetDisplay
+                {
+                    Anchor = Anchor.BottomCentre,
+                    Origin = Anchor.TopCentre,
+                    Y = 8,
+                },
             };
 
             hitPolicy = new StartTimeOrderedHitPolicy { HitObjectContainer = HitObjectContainer };

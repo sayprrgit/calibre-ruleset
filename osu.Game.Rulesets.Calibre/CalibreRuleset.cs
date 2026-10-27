@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using osu.Framework.Graphics;
 using osu.Framework.Input.Bindings;
+using osu.Framework.Localisation;
 using osu.Game.Beatmaps;
 using osu.Game.Rulesets.Calibre.Beatmaps;
 using osu.Game.Rulesets.Calibre.Mods;
@@ -40,6 +41,34 @@ namespace osu.Game.Rulesets.Calibre
         public override IBeatmapProcessor CreateBeatmapProcessor(IBeatmap beatmap) => new BeatmapProcessor(beatmap);
 
         public override ScoreProcessor CreateScoreProcessor() => new CalibreScoreProcessor(this);
+
+        // Le taux de drain est calibré sur la beatmap entière (ticks et queues compris) d'après son HP :
+        // une partie sans faute garde une marge, une série de misses fait échouer.
+        public override HealthProcessor CreateHealthProcessor(double drainStartTime) => new DrainingHealthProcessor(drainStartTime, 0);
+
+        public override IEnumerable<HitResult> GetValidHitResults() => new[]
+        {
+            HitResult.Great,
+            HitResult.Ok,
+            HitResult.Meh,
+            HitResult.LargeTickHit,
+            HitResult.SliderTailHit,
+        };
+
+        public override LocalisableString GetDisplayNameForHitResult(HitResult result)
+        {
+            switch (result)
+            {
+                case HitResult.LargeTickHit:
+                    return "tick de slider";
+
+                case HitResult.SliderTailHit:
+                    return "fin de slider";
+
+                default:
+                    return base.GetDisplayNameForHitResult(result);
+            }
+        }
 
         public override DifficultyCalculator CreateDifficultyCalculator(IWorkingBeatmap beatmap) =>
             new CalibreDifficultyCalculator(RulesetInfo, beatmap);
