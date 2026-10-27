@@ -7,6 +7,7 @@ using osu.Framework.Graphics;
 using osu.Framework.Input.Bindings;
 using osu.Framework.Localisation;
 using osu.Game.Beatmaps;
+using osu.Game.Overlays.Settings;
 using osu.Game.Rulesets.Calibre.Beatmaps;
 using osu.Game.Rulesets.Calibre.Mods;
 using osu.Game.Rulesets.Calibre.Scoring;
@@ -94,6 +95,9 @@ namespace osu.Game.Rulesets.Calibre
         };
 
         public override Drawable CreateIcon() => new CalibreRulesetIcon();
+
+        // Les écrans propres à Calibre (Diagnostic, puis Entraînement) s'ouvrent depuis sa section des réglages.
+        public override RulesetSettingsSubsection CreateSettings() => new CalibreSettingsSubsection(this);
 
         // Leave this line intact. It will bake the correct version into the ruleset on each build/release.
         public override string RulesetAPIVersionSupported => CURRENT_RULESET_API_VERSION;

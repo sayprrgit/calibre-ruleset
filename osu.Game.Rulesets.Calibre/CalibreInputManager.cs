@@ -52,5 +52,26 @@ namespace osu.Game.Rulesets.Calibre
     public static class CalibreActionExtensions
     {
         public static bool IsHitAction(this CalibreAction action) => action <= CalibreAction.Mouse2;
+
+        /// <summary>
+        /// Nom court affiché et exporté : K1, K2, M1 ou M2.
+        /// </summary>
+        public static string ShortName(this CalibreAction action)
+        {
+            switch (action)
+            {
+                case CalibreAction.Key1:
+                    return "K1";
+
+                case CalibreAction.Key2:
+                    return "K2";
+
+                case CalibreAction.Mouse1:
+                    return "M1";
+
+                default:
+                    return "M2";
+            }
+        }
     }
 }
