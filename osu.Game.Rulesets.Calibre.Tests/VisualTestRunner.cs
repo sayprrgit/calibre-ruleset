@@ -18,7 +18,9 @@ namespace osu.Game.Rulesets.Calibre.Tests
             // et ouvrirait (voire migrerait) la vraie base Realm du joueur.
             using (DesktopGameHost host = Host.GetSuitableDesktopHost(@"calibre-visual-tests"))
             {
-                host.Run(new OsuTestBrowser());
+                // « --screenshots <dossier> » régénère les captures du README au lieu d'ouvrir le navigateur.
+                int screenshots = Array.IndexOf(args, "--screenshots");
+                host.Run(screenshots >= 0 && screenshots + 1 < args.Length ? new ScreenshotRunner(args[screenshots + 1]) : new OsuTestBrowser());
                 return 0;
             }
         }

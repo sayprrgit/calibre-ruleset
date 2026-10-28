@@ -42,10 +42,11 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Training
                 ProfileStore.Update(storage, profile =>
                 {
                     profile.GamesAnalysed = 3;
-                    profile.Patterns[PatternType.Stream] = new PatternRecord { Objects = 60, AccuracySum = 60 * 0.98, Level = 1.3 };
-                    profile.Patterns[PatternType.LongSharpJump] = new PatternRecord { Objects = 40, AccuracySum = 40 * 0.62 };
-                    profile.Patterns[PatternType.ShortWideJump] = new PatternRecord { Objects = 40, AccuracySum = 40 * 0.75 };
-                    profile.Patterns[PatternType.Slider] = new PatternRecord { Objects = 30, AccuracySum = 30 * 0.85 };
+                    // Sommes d'écarts choisies pour des UR de 90, 160, 130 et 110.
+                    profile.Patterns[PatternType.Stream] = new PatternRecord { Objects = 60, AccuracySum = 60 * 0.98, TimedHits = 60, OffsetSum = -180, OffsetSquareSum = 5400, Level = 1.3 };
+                    profile.Patterns[PatternType.LongSharpJump] = new PatternRecord { Objects = 40, AccuracySum = 40 * 0.62, TimedHits = 40, OffsetSum = 240, OffsetSquareSum = 11680 };
+                    profile.Patterns[PatternType.ShortWideJump] = new PatternRecord { Objects = 40, AccuracySum = 40 * 0.75, TimedHits = 40, OffsetSum = 80, OffsetSquareSum = 6920 };
+                    profile.Patterns[PatternType.Slider] = new PatternRecord { Objects = 30, AccuracySum = 30 * 0.85, TimedHits = 30, OffsetSum = -30, OffsetSquareSum = 3660 };
                 });
             });
 
