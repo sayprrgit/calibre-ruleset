@@ -26,6 +26,10 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
         // 2 temps d'annonce puis 10 temps mesurés, un toutes les 500 ms à partir de 1000 ms.
         private static readonly MetronomeSchedule schedule = new MetronomeSchedule(500, 2, 10);
 
+        // Irrégularités de frappe de somme nulle : elles donnent un écart-type réaliste sans déplacer les moyennes attendues.
+        private static readonly int[] jitter_a = { -9, 4, -3, 11, -6, 2, 7, -12, 5, 1, -7, 7 };
+        private static readonly int[] jitter_b = { 14, -8, 3, -17, 9, -2, 12, -6, -11, 6, 4, -4 };
+
         private ManualMetronomeSource source = null!;
 
         [Test]
@@ -42,14 +46,14 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
             });
 
             startPhase(() => runner);
-            tapEveryBeat(_ => 20, _ => Key.Z);
+            tapEveryBeat(beat => 20 + jitter_a[beat], _ => Key.Z);
             finishPhase();
 
             AddAssert("phase audio audible", () => source.Starts, () => Is.EqualTo(new[] { true }));
             AddAssert("pas encore de résultat", () => result, () => Is.Null);
 
             startPhase(() => runner);
-            tapEveryBeat(_ => 40, beat => beat % 2 == 0 ? Key.Z : Key.X);
+            tapEveryBeat(beat => 40 + jitter_b[beat], beat => beat % 2 == 0 ? Key.Z : Key.X);
             finishPhase();
 
             AddAssert("phase visuelle muette", () => source.Starts, () => Is.EqualTo(new[] { true, false }));
@@ -57,7 +61,7 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
             AddAssert("10 temps par phase", () => (result!.Audio.Statistics.Count, result.Visual.Statistics.Count), () => Is.EqualTo((10, 10)));
             AddAssert("offset audio recommandé", () => result!.RecommendedAudioOffset, () => Is.EqualTo(-20));
             AddAssert("offset visuel recommandé", () => result!.RecommendedVisualOffset, () => Is.EqualTo(-40));
-            AddStep("afficher les résultats", () => Child = new LatencyResultView(result!));
+            AddStep("afficher les résultats", () => Child = new Container { RelativeSizeAxes = Axes.Both, Padding = new MarginPadding(40), Child = new LatencyResultView(result!) });
         }
 
         [Test]
@@ -77,12 +81,12 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
             });
 
             startPhase(() => runner);
-            tapEveryBeat(beat => beat % 2 == 0 ? (beat % 4 == 0 ? -4 : 4) : (beat % 4 == 1 ? 16 : 24), beat => beat % 2 == 0 ? Key.Z : Key.X, stabilitySchedule);
+            tapEveryBeat(beat => beat % 2 == 0 ? jitter_a[beat / 2] : 20 + jitter_b[beat / 2], beat => beat % 2 == 0 ? Key.Z : Key.X, stabilitySchedule);
             finishPhase(stabilitySchedule);
 
             AddAssert("K1 et K2 mesurées", () => result!.Keys.Select(k => k.Action), () => Is.EqualTo(new[] { CalibreAction.Key1, CalibreAction.Key2 }));
             AddAssert("K2 traînante", () => result!.Keyboard!.LaggingKey, () => Is.EqualTo(CalibreAction.Key2));
-            AddStep("afficher les résultats", () => Child = new OsuScrollContainer { RelativeSizeAxes = Axes.Both, Child = new KeyStabilityResultView(result!) });
+            AddStep("afficher les résultats", () => Child = new OsuScrollContainer { RelativeSizeAxes = Axes.Both, Padding = new MarginPadding(40), Child = new KeyStabilityResultView(result!) });
         }
 
 

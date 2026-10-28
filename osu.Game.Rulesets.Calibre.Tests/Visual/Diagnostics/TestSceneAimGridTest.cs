@@ -59,14 +59,14 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
             {
                 var target = targets[i];
 
-                // Bas droite : frappe à 1,5 rayon du centre, donc hors de la cible.
-                var aim = target.Zone == 8 ? target.Position + new Vector2(AimGridTestRunner.DEFAULT_RADIUS * 1.5f, 0) : target.Position + new Vector2(4, 0);
+                // Bas droite : frappe à 1,5 rayon du centre, donc hors de la cible. Ailleurs, l'écart croît avec la zone.
+                var aim = target.Zone == 8 ? target.Position + new Vector2(AimGridTestRunner.DEFAULT_RADIUS * 1.5f, 0) : target.Position + new Vector2(4 + target.Zone, 0);
 
                 AddStep($"attendre la cible {i + 1}", () => clock.CurrentTime += AimTargetSequence.MAXIMUM_DELAY);
                 AddUntilStep("cible affichée", () => runner.CurrentTarget?.Position, () => Is.EqualTo(target.Position));
                 AddStep("viser et frapper", () =>
                 {
-                    clock.CurrentTime += 300;
+                    clock.CurrentTime += reactionTime(target.Zone);
                     InputManager.MoveMouseTo(runner.PlayfieldToScreenSpace(aim));
                     InputManager.Key(Key.Z);
                 });
@@ -74,11 +74,13 @@ namespace osu.Game.Rulesets.Calibre.Tests.Visual.Diagnostics
 
             AddUntilStep("test terminé", () => result != null);
             AddAssert("9 tentatives, 8 touchées", () => (result!.Attempts.Count, result.Attempts.Count(a => a.Hit)), () => Is.EqualTo((9, 8)));
-            AddAssert("temps de réaction de 300 ms", () => result!.Attempts.Select(a => a.ReactionTime), () => Has.All.EqualTo(300).Within(1e-6));
+            AddAssert("temps de réaction de chaque zone", () => result!.Attempts.Select(a => a.ReactionTime - reactionTime(a.Zone)), () => Has.All.EqualTo(0).Within(1e-6));
             AddAssert("distance mesurée en pixels de l'aire de jeu", () => result!.Zones[0].MeanDistance, () => Is.EqualTo(4).Within(0.5));
             AddAssert("zone faible : bas droite", () => result!.WeakZone, () => Is.EqualTo(8));
-            AddStep("afficher les résultats", () => Child = new OsuScrollContainer { RelativeSizeAxes = Axes.Both, Child = new AimGridResultView(result!) });
+            AddStep("afficher les résultats", () => Child = new OsuScrollContainer { RelativeSizeAxes = Axes.Both, Padding = new MarginPadding(40), Child = new AimGridResultView(result!) });
         }
+
+        private static double reactionTime(int zone) => 260 + 15 * zone;
 
         [Test]
         public void TestUnansweredTargetsExpire()
